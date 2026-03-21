@@ -530,11 +530,11 @@ export default function FarmDirect() {
               <div style={{ position: "relative", zIndex: 1 }}>
                 <div style={{ fontSize: "5rem", animation: "float 2.5s ease-in-out infinite", display: "inline-block", marginBottom: 16 }}>🌾</div>
                 <h1 style={{
-                  fontSize: "clamp(2rem,5vw,3.8rem)", fontWeight: 900, lineHeight: 1.2,
+                  fontSize: "clamp(2rem,5vw,3.5rem)", fontWeight: 900, lineHeight: 1.2,
                   textShadow: "0 4px 20px rgba(0,0,0,0.3)",
                   animation: "fadeUp 0.8s both", marginBottom: 14,
                 }}>
-                  शेतकरी ते ग्राहक<br />
+                  Shivam Farm - शेतकरी ते ग्राहक<br />
                   <span style={{ color: "#86efac" }}>थेट जोडणी</span>
                 </h1>
                 <p style={{
