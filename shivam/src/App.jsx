@@ -101,12 +101,14 @@ body {
   transition: all 0.12s cubic-bezier(0.23, 1, 0.32, 1);
 }
 body:has(a:hover) #sf-cursor,
-body:has(button:hover) #sf-cursor {
+body:has(button:hover) #sf-cursor,
+body:has(.step-card:hover) #sf-cursor {
   width: 22px; height: 22px;
   background: #f59e0b;
 }
 body:has(a:hover) #sf-cursor-follower,
-body:has(button:hover) #sf-cursor-follower {
+body:has(button:hover) #sf-cursor-follower,
+body:has(.step-card:hover) #sf-cursor-follower {
   width: 56px; height: 56px;
   border-color: rgba(245,158,11,0.5);
 }
@@ -293,12 +295,14 @@ body:has(button:hover) #sf-cursor-follower {
   padding: 34px 22px;
   text-align: center;
   transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: none;
 }
 .step-card:hover {
   transform: translateY(-12px);
   border-color: rgba(34,197,94,0.4);
   box-shadow: 0 20px 50px rgba(34,197,94,0.12);
 }
+.step-card:hover .card-emoji { animation: pulse 0.5s infinite; }
 
 /* ===== ORDER ROW ===== */
 .order-row {
@@ -610,6 +614,7 @@ function MagButton({ children, onClick, style, className, href, target }) {
   if (href) {
     return (
       <a ref={ref} href={href} target={target} rel="noreferrer"
+        onClick={(e) => { if (onClick) onClick(e); }}
         onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onMouseEnter={handleMouseEnter}
         className={`mag-btn ${className || ""}`} style={{ ...style, display:"inline-flex", alignItems:"center", justifyContent:"center", textDecoration:"none" }}>
         {children}
@@ -978,7 +983,9 @@ export default function FarmDirect() {
   const submitOrder = async () => {
     const name = orderName.trim(), phone = orderPhone.trim(), address = orderAddress.trim();
     if (!name || !phone || !address) { showToast("⚠️ सर्व माहिती भरा!"); return; }
-    if (phone.length < 10) { showToast("⚠️ योग्य फोन नंबर टाका!"); return; }
+    const nameRegex = /^[A-Za-z\u0900-\u097F\s]+$/;
+    if (!nameRegex.test(name)) { showToast("⚠️ नावात फक्त अक्षरे असावीत!"); return; }
+    if (!/^\d{10}$/.test(phone)) { showToast("⚠️ फोन नंबर १० अंकी असावा!"); return; }
     const { product, farmer } = modal.data;
     await api.placeOrder({ product: product.name, productEmoji: product.emoji, farmer: farmer?.name, farmerPhone: farmer?.phone, qty: orderQty, customerName: name, customerPhone: phone, address });
     await refreshData();
@@ -991,6 +998,9 @@ export default function FarmDirect() {
   const submitFarmer = async () => {
     const name = farmerName.trim(), phone = farmerPhone.trim(), village = farmerVillage.trim(), crops = farmerCrops.trim();
     if (!name || !phone || !village || !crops) { showToast("⚠️ सर्व माहिती भरा!"); return; }
+    const nameRegex = /^[A-Za-z\u0900-\u097F\s]+$/;
+    if (!nameRegex.test(name)) { showToast("⚠️ नावात फक्त अक्षरे असावीत!"); return; }
+    if (!/^\d{10}$/.test(phone)) { showToast("⚠️ फोन नंबर १० अंकी असावा!"); return; }
     await api.registerFarmer({ name, phone, village, crops: crops.split(",").map(s=>s.trim()).filter(Boolean), priceRange:"—", rating:0, verified:false });
     await refreshData();
     setFarmerName(""); setFarmerPhone(""); setFarmerVillage(""); setFarmerCrops(""); setFarmerArea("");
@@ -1000,6 +1010,9 @@ export default function FarmDirect() {
   const submitCustomer = async () => {
     const name = custName.trim(), phone = custPhone.trim(), address = custAddress.trim();
     if (!name || !phone || !address) { showToast("⚠️ सर्व माहिती भरा!"); return; }
+    const nameRegex = /^[A-Za-z\u0900-\u097F\s]+$/;
+    if (!nameRegex.test(name)) { showToast("⚠️ नावात फक्त अक्षरे असावीत!"); return; }
+    if (!/^\d{10}$/.test(phone)) { showToast("⚠️ फोन नंबर १० अंकी असावा!"); return; }
     await api.registerCustomer({ name, phone, address, needs: custNeeds });
     setCustName(""); setCustPhone(""); setCustAddress(""); setCustNeeds("");
     showToast(`🛒 ${name} — ग्राहक म्हणून नोंदणी झाली!`);
@@ -1020,7 +1033,7 @@ export default function FarmDirect() {
 
       {/* FLOATING CONTACT */}
       <div style={{ position:"fixed", bottom:90, left:18, zIndex:900, display:"flex", flexDirection:"column", gap:10 }}>
-        <MagButton href="tel:9270441850" className="floating-btn" style={{
+        <MagButton href="tel:9270441850" onClick={() => showToast("📞 कॉल करा: 9270441850")} className="floating-btn" style={{
           background:"linear-gradient(135deg,#15803d,#22c55e)",
           boxShadow:"0 6px 20px rgba(34,197,94,0.5)",
         }}>📞</MagButton>
@@ -1125,12 +1138,12 @@ export default function FarmDirect() {
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:24 }}>
                 {[
-                  {num:"01", icon:"👨‍🌾", title:"शेतकरी नोंदणी", desc:"नाव, पत्ता, फोन, पिके नोंदवा"},
-                  {num:"02", icon:"📋", title:"उत्पादन लिस्ट", desc:"उपलब्ध माल, किंमत थेट टाका"},
-                  {num:"03", icon:"📱", title:"ग्राहक निवड", desc:"ऑनलाईन पाहा, थेट कॉल करा"},
-                  {num:"04", icon:"🚚", title:"थेट डिलिव्हरी", desc:"शेतातून घरापर्यंत ताजे!"},
+                  {num:"01", icon:"👨‍🌾", title:"शेतकरी नोंदणी", desc:"नाव, पत्ता, फोन, पिके नोंदवा", action: () => { setPage("register"); setRegTab("farmer"); }},
+                  {num:"02", icon:"📋", title:"उत्पादन लिस्ट", desc:"उपलब्ध माल, किंमत थेट टाका", action: () => setPage("products")},
+                  {num:"03", icon:"📱", title:"ग्राहक निवड", desc:"ऑनलाईन पाहा, थेट कॉल करा", action: () => setPage("farmers")},
+                  {num:"04", icon:"🚚", title:"थेट डिलिव्हरी", desc:"शेतातून घरापर्यंत ताजे!", action: () => setPage("orders")},
                 ].map((s,i) => (
-                  <div key={i} className="step-card reveal" style={{ animationDelay:`${i*0.1}s` }}>
+                  <div key={i} className="step-card reveal" style={{ animationDelay:`${i*0.1}s` }} onClick={s.action}>
                     <div style={{
                       fontFamily:"'Baloo 2', monospace",
                       fontSize:"2.8rem", fontWeight:900,
@@ -1138,9 +1151,12 @@ export default function FarmDirect() {
                       WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
                       marginBottom:10, lineHeight:1,
                     }}>{s.num}</div>
-                    <div style={{ fontSize:"3.2rem", margin:"10px 0 12px", filter:"drop-shadow(0 0 10px rgba(34,197,94,0.3))" }}>{s.icon}</div>
+                    <div className="card-emoji" style={{ fontSize:"3.2rem", margin:"10px 0 12px", filter:"drop-shadow(0 0 10px rgba(34,197,94,0.3))" }}>{s.icon}</div>
                     <h3 style={{ fontWeight:800, color:"#f0fdf4", fontSize:"1.08rem", marginBottom:8 }}>{s.title}</h3>
                     <p style={{ color:"rgba(240,253,244,0.5)", fontSize:"0.9rem", lineHeight:1.7 }}>{s.desc}</p>
+                    <div style={{ marginTop:14 }}>
+                      <span style={{ fontSize:"0.8rem", color:"rgba(34,197,94,0.8)", fontWeight:700, paddingBottom:2 }}>पुढे जा →</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1310,8 +1326,8 @@ export default function FarmDirect() {
                 <>
                   <h3 className="gradient-text" style={{ fontSize:"1.3rem", fontWeight:800, marginBottom:24, textAlign:"center" }}>👨‍🌾 शेतकरी नोंदणी</h3>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-                    <div><label style={labelStyle}>पूर्ण नाव</label><input className="input-field" value={farmerName} onChange={e=>setFarmerName(e.target.value)} placeholder="तुमचे नाव" /></div>
-                    <div><label style={labelStyle}>फोन नंबर</label><input className="input-field" value={farmerPhone} onChange={e=>setFarmerPhone(e.target.value)} placeholder="9XXXXXXXXX" /></div>
+                    <div><label style={labelStyle}>पूर्ण नाव</label><input className="input-field" value={farmerName} onChange={e=>setFarmerName(e.target.value.replace(/[\d]/g, ''))} onKeyPress={e => { if (/[0-9]/.test(e.key)) e.preventDefault(); }} placeholder="तुमचे नाव" /></div>
+                    <div><label style={labelStyle}>फोन नंबर</label><input className="input-field" value={farmerPhone} onChange={e=>setFarmerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} onKeyPress={e => { if (!/[0-9]/.test(e.key)) e.preventDefault(); }} maxLength={10} placeholder="9XXXXXXXXX" type="tel" /></div>
                   </div>
                   <div style={{ marginBottom:14 }}><label style={labelStyle}>गाव / पत्ता</label><input className="input-field" value={farmerVillage} onChange={e=>setFarmerVillage(e.target.value)} placeholder="गाव, तालुका, जिल्हा" /></div>
                   <div style={{ marginBottom:14 }}><label style={labelStyle}>पिके (स्वल्पविरामाने वेगळे करा)</label><textarea className="input-field" style={{ height:80, resize:"vertical" }} value={farmerCrops} onChange={e=>setFarmerCrops(e.target.value)} placeholder="टोमॅटो, कांदा, गहू..." /></div>
@@ -1322,8 +1338,8 @@ export default function FarmDirect() {
                 <>
                   <h3 className="gradient-text" style={{ fontSize:"1.3rem", fontWeight:800, marginBottom:24, textAlign:"center" }}>🛒 ग्राहक नोंदणी</h3>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-                    <div><label style={labelStyle}>पूर्ण नाव</label><input className="input-field" value={custName} onChange={e=>setCustName(e.target.value)} placeholder="तुमचे नाव" /></div>
-                    <div><label style={labelStyle}>फोन नंबर</label><input className="input-field" value={custPhone} onChange={e=>setCustPhone(e.target.value)} placeholder="9XXXXXXXXX" /></div>
+                    <div><label style={labelStyle}>पूर्ण नाव</label><input className="input-field" value={custName} onChange={e=>setCustName(e.target.value.replace(/[\d]/g, ''))} onKeyPress={e => { if (/[0-9]/.test(e.key)) e.preventDefault(); }} placeholder="तुमचे नाव" /></div>
+                    <div><label style={labelStyle}>फोन नंबर</label><input className="input-field" value={custPhone} onChange={e=>setCustPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} onKeyPress={e => { if (!/[0-9]/.test(e.key)) e.preventDefault(); }} maxLength={10} placeholder="9XXXXXXXXX" type="tel" /></div>
                   </div>
                   <div style={{ marginBottom:14 }}><label style={labelStyle}>पूर्ण पत्ता</label><textarea className="input-field" style={{ height:80, resize:"vertical" }} value={custAddress} onChange={e=>setCustAddress(e.target.value)} placeholder="घर नं, रस्ता, गाव..." /></div>
                   <div style={{ marginBottom:24 }}><label style={labelStyle}>कोणते अन्नपदार्थ हवेत?</label><input className="input-field" value={custNeeds} onChange={e=>setCustNeeds(e.target.value)} placeholder="भाज्या, फळे, धान्य..." /></div>
@@ -1436,8 +1452,8 @@ export default function FarmDirect() {
               <h2 className="gradient-text" style={{ fontSize:"1.5rem", fontWeight:900, marginBottom:5 }}>{modal.data.product.name}</h2>
               <p style={{ color:"rgba(240,253,244,0.5)", fontSize:"0.9rem" }}>👨‍🌾 {modal.data.farmer?.name} &nbsp;|&nbsp; <span className="gradient-text-warm">₹{modal.data.product.price}/{modal.data.product.unit}</span></p>
             </div>
-            <div style={{ marginBottom:13 }}><label style={labelStyle}>तुमचे नाव *</label><input className="input-field" value={orderName} onChange={e=>setOrderName(e.target.value)} placeholder="पूर्ण नाव टाका" autoComplete="off" /></div>
-            <div style={{ marginBottom:13 }}><label style={labelStyle}>फोन नंबर *</label><input className="input-field" value={orderPhone} onChange={e=>setOrderPhone(e.target.value)} placeholder="9XXXXXXXXX" type="tel" autoComplete="off" /></div>
+            <div style={{ marginBottom:13 }}><label style={labelStyle}>तुमचे नाव *</label><input className="input-field" value={orderName} onChange={e=>setOrderName(e.target.value.replace(/[\d]/g, ''))} onKeyPress={e => { if (/[0-9]/.test(e.key)) e.preventDefault(); }} placeholder="पूर्ण नाव टाका" autoComplete="off" /></div>
+            <div style={{ marginBottom:13 }}><label style={labelStyle}>फोन नंबर *</label><input className="input-field" value={orderPhone} onChange={e=>setOrderPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} onKeyPress={e => { if (!/[0-9]/.test(e.key)) e.preventDefault(); }} maxLength={10} placeholder="9XXXXXXXXX" type="tel" autoComplete="off" /></div>
             <div style={{ marginBottom:13 }}><label style={labelStyle}>डिलिव्हरी पत्ता *</label><textarea className="input-field" style={{ height:78, resize:"vertical" }} value={orderAddress} onChange={e=>setOrderAddress(e.target.value)} placeholder="घर नं, गाव, जिल्हा..." autoComplete="off" /></div>
             <div style={{ marginBottom:18 }}><label style={labelStyle}>प्रमाण ({modal.data.product.unit}) *</label><input className="input-field" type="number" min="1" value={orderQty} onChange={e=>setOrderQty(e.target.value)} /></div>
             <div style={{ background:"rgba(34,197,94,0.08)", border:"1px solid rgba(34,197,94,0.2)", borderRadius:12, padding:"10px 16px", marginBottom:18, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
