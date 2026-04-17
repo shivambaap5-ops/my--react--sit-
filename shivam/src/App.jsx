@@ -10,6 +10,10 @@ import {
   addDoc, 
   serverTimestamp 
 } from "firebase/firestore";
+import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { SplashScreen } from "@capacitor/splash-screen";
 
 // =================== TRANSLATIONS ===================
 const T = {
@@ -368,6 +372,7 @@ input,textarea,select { font-family:'Baloo 2','Noto Sans Devanagari',sans-serif 
 
 // =================== CURSOR ===================
 function CustomCursor() {
+  if (Capacitor.isNativePlatform()) return null;
   const cursorRef = useRef(null);
   const followerRef = useRef(null);
   const posRef = useRef({ x: 0, y: 0 });
@@ -748,12 +753,35 @@ export default function FarmDirect() {
     localStorage.setItem("sf_theme", theme);
     if (theme === "light") {
       document.body.classList.add("light-theme");
+      if (Capacitor.isNativePlatform()) {
+        StatusBar.setStyle({ style: Style.Light });
+        StatusBar.setBackgroundColor({ color: "#f8fafc" });
+      }
     } else {
       document.body.classList.remove("light-theme");
+      if (Capacitor.isNativePlatform()) {
+        StatusBar.setStyle({ style: Style.Dark });
+        StatusBar.setBackgroundColor({ color: "#060d08" });
+      }
     }
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark");
+
+  // Handle Native Back Button
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      SplashScreen.hide();
+      const backListener = App.addListener('backButton', () => {
+        if (page === 'home') {
+          App.exitApp();
+        } else {
+          setPage('home');
+        }
+      });
+      return () => backListener.remove();
+    }
+  }, [page]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
