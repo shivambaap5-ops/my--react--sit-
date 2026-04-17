@@ -1,10 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import Navbar from './Component/Navbar';
 import Sidbar from './Component/Sidbar';
 import Dashboard from './Pages/Dashboard';
 import './index.css';
 
 function App() {
+  useEffect(() => {
+    const initBackButton = async () => {
+      await CapacitorApp.addListener('backButton', ({canGoBack}) => {
+        if(!canGoBack){
+          CapacitorApp.exitApp();
+        } else {
+          window.history.back();
+        }
+      });
+    };
+    initBackButton();
+    return () => {
+      CapacitorApp.removeAllListeners();
+    };
+  }, []);
+
   return (
     <div className="App" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fff' }}>
       <Navbar />
